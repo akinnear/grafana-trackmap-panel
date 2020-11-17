@@ -21,9 +21,10 @@ export class TrackMapCtrl extends MetricsPanelCtrl {
 
     _.defaults(this.panel, {
       maxDataPoints: 500,
+      tileServerLocation: "localhost",
       autoZoom: true,
       scrollWheelZoom: false,
-      defaultLayer: 'OpenStreetMap',
+      defaultLayer: 'TileServer',
       showLayerChanger: true,
       lineColor: 'red',
       pointColor: 'royalblue',
@@ -31,6 +32,14 @@ export class TrackMapCtrl extends MetricsPanelCtrl {
 
     // Save layers globally in order to use them in options
     this.layers = {
+      'TileServer': L.tileLayer('http://'+this.panel.tileServerLocation+':8080/styles/basic-preview/{z}/{x}/{y}.png', {
+        zoom: 7,
+        // bounded to Nevada
+        maxBounds: L.latLngBounds(
+            L.latLng(35.00053, -120.0074), // lower left
+            L.latLng(42.00391, -114.0379) // upper right
+        )
+      }),
       'OpenStreetMap': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         maxZoom: 19
