@@ -32,7 +32,7 @@ export class TrackMapCtrl extends MetricsPanelCtrl {
 
     // Save layers globally in order to use them in options
     this.layers = {
-      'TileServer': L.tileLayer('http://'+this.panel.tileServerLocation+':8080/styles/basic-preview/{z}/{x}/{y}.png', {
+      'TileServer': L.tileLayer('http://'+this.panel.tileServerLocation+':8181/styles/basic-preview/{z}/{x}/{y}.png', {
         zoom: 7,
         // bounded to Nevada
         maxBounds: L.latLngBounds(
