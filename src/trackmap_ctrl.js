@@ -3,6 +3,8 @@ import moment from 'moment';
 
 import appEvents from 'app/core/app_events';
 import {MetricsPanelCtrl} from 'app/plugins/sdk';
+import { DataSourceApi } from '@grafana/data';
+import { getDataSourceSrv } from '@grafana/runtime';
 
 import './leaflet/leaflet.css!';
 import './partials/module.css!';
@@ -28,6 +30,7 @@ export class TrackMapCtrl extends MetricsPanelCtrl {
       showLayerChanger: true,
       lineColor: 'red',
       pointColor: 'royalblue',
+      groupIds: undefined
     });
 
     // Save layers globally in order to use them in options
@@ -61,6 +64,8 @@ export class TrackMapCtrl extends MetricsPanelCtrl {
 
     this.timeSrv = $injector.get('timeSrv');
     this.coords = [];
+    this.systems = [];
+    this.systemMarkers = [];
     this.leafMap = null;
     this.layerChanger = null;
     this.polyline = null;
@@ -197,7 +202,7 @@ export class TrackMapCtrl extends MetricsPanelCtrl {
 
   applyScrollZoom() {
     let enabled = this.leafMap.scrollWheelZoom.enabled();
-    if (enabled != this.panel.scrollWheelZoom){
+    if (enabled !== this.panel.scrollWheelZoom){
       if (enabled){
         this.leafMap.scrollWheelZoom.disable();
       }
@@ -218,7 +223,7 @@ export class TrackMapCtrl extends MetricsPanelCtrl {
       this.layers[this.panel.defaultLayer].addTo(this.leafMap);
 
       // Hide/show the layer switcher
-      this.leafMap.removeControl(this.layerChanger)
+      this.leafMap.removeControl(this.layerChanger);
       if (this.panel.showLayerChanger){
         this.leafMap.addControl(this.layerChanger);
       }
@@ -254,6 +259,13 @@ export class TrackMapCtrl extends MetricsPanelCtrl {
 
     // Add default layer to map
     this.layers[this.panel.defaultLayer].addTo(this.leafMap);
+
+    let dataSource = getDataSourceSrv();
+    console.log("DataSource", dataSource)
+    let variable = _.find(dataSource.templateSrv.variables, {'name':'groupName'});
+    let groupNames = variable?.current?.value;
+    let tags = variable?.tags.map(tag => tag.text);
+    console.log("Group Names", groupNames, "Tags", tags);
 
     // Hover marker
     this.hoverMarker = L.circleMarker(L.latLng(0, 0), {
@@ -323,6 +335,18 @@ export class TrackMapCtrl extends MetricsPanelCtrl {
     this.zoomToFit();
   }
 
+  addSystemsToMap() {
+    log("addDataToMap");
+    this.systemMarkers.forEach(marker => this.leafMap.removeLayer(marker));
+
+    this.systemMarkers = this.systems.map(system => {
+      const latLng = L.latLng(system.latitude, system.longitude);
+      const marker = L.marker(latLng).addTo(this.leafMap);
+      marker.bindPopup(`<b>${system.name}</b>`);
+      return marker;
+    });
+  }
+
   zoomToFit(){
     log("zoomToFit");
     if (this.panel.autoZoom && this.polyline){
@@ -356,7 +380,29 @@ export class TrackMapCtrl extends MetricsPanelCtrl {
     log("onDataReceived");
     this.setupMap();
 
-    if (data.length === 0 || data.length !== 2) {
+    let systemsObj = undefined;
+    if (data.length === 1) {
+      const item = data[0];
+      if (this.isSystemObject(item)) {
+        systemsObj = item;
+      }
+    } else if (data.length === 3) {
+      const item = data[2];
+      if (this.isSystemObject(item)) {
+        systemsObj = item;
+      }
+    }
+
+    if (systemsObj) {
+      this.systems = systemsObj.rows.map(systemObj => {
+        let result = {};
+        systemsObj.columns.forEach((col, index) => result[col.text] = systemObj[index]);
+        return result;
+      });
+      this.addSystemsToMap();
+    }
+
+    if (data.length < 2) {
       // No data or incorrect data, show a world map and abort
       this.leafMap.setView([0, 0], 1);
       this.render();
@@ -370,7 +416,7 @@ export class TrackMapCtrl extends MetricsPanelCtrl {
     const lons = data[1].datapoints;
     for (let i = 0; i < lats.length; i++) {
       if (lats[i][0] == null || lons[i][0] == null ||
-          (lats[i][0] == 0 && lons[i][0] == 0) ||
+          (lats[i][0] === 0 && lons[i][0] === 0) ||
           lats[i][1] !== lons[i][1]) {
         continue;
       }
@@ -381,6 +427,12 @@ export class TrackMapCtrl extends MetricsPanelCtrl {
       });
     }
     this.addDataToMap();
+  }
+
+  isSystemObject(item) {
+    return item.type === "table" &&
+        item.refId === undefined &&
+        (item.columns && item.columns.length === 6);
   }
 
   onDataSnapshotLoad(snapshotData) {

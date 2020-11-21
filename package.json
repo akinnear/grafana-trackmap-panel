@@ -37,6 +37,8 @@
     "load-grunt-tasks": "^5.1.0"
   },
   "dependencies": {
+    "@grafana/data": "^7.2.1",
+    "@grafana/runtime": "^7.2.1",
     "leaflet": "^1.7.1",
     "moment": "^2.25.3"
   }
