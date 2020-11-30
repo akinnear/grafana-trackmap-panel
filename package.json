@@ -29,6 +29,8 @@
   "devDependencies": {
     "@babel/core": "^7.12.3",
     "@babel/preset-env": "7.5.5",
+    "@grafana/data": "^7.2.1",
+    "@grafana/runtime": "^7.2.1",
     "grunt": "^1.3.0",
     "grunt-babel": "^8.0.0",
     "grunt-contrib-clean": "^2.0.0",
@@ -37,8 +39,6 @@
     "load-grunt-tasks": "^5.1.0"
   },
   "dependencies": {
-    "@grafana/data": "^7.2.1",
-    "@grafana/runtime": "^7.2.1",
     "leaflet": "^1.7.1",
     "moment": "^2.25.3"
   }

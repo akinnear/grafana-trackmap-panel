@@ -15,6 +15,30 @@ function log(msg) {
   //console.log(msg);
 }
 
+// constants
+const LAT_LNG_CENTER_NEVADA = L.latLng(38.8026, -116.4194);
+const DEFAULT_ZOOM_LEVEL = 5; // any higher it clips the state
+
+const GREEN_ICON = new L.Icon({
+  iconUrl: 'public/plugins/pr0ps-trackmap-panel/img/marker-icon-2x-green.png',
+  shadowUrl: 'public/plugins/pr0ps-trackmap-panel/img/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const RED_ICON = new L.Icon({
+  iconUrl: 'public/plugins/pr0ps-trackmap-panel/img/marker-icon-2x-red.png',
+  shadowUrl: 'public/plugins/pr0ps-trackmap-panel/img/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+
+
 export class TrackMapCtrl extends MetricsPanelCtrl {
   constructor($scope, $injector) {
     super($scope, $injector);
@@ -36,6 +60,7 @@ export class TrackMapCtrl extends MetricsPanelCtrl {
     // Save layers globally in order to use them in options
     this.layers = {
       'TileServer': L.tileLayer('http://'+this.panel.tileServerLocation+':8181/styles/basic-preview/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         zoom: 7,
         // bounded to Nevada
         maxBounds: L.latLngBounds(
@@ -72,6 +97,7 @@ export class TrackMapCtrl extends MetricsPanelCtrl {
     this.hoverMarker = null;
     this.hoverTarget = null;
     this.setSizePromise = null;
+
 
     // Panel events
     this.events.on('panel-initialized', this.onInitialized.bind(this));
@@ -260,12 +286,10 @@ export class TrackMapCtrl extends MetricsPanelCtrl {
     // Add default layer to map
     this.layers[this.panel.defaultLayer].addTo(this.leafMap);
 
-    let dataSource = getDataSourceSrv();
-    console.log("DataSource", dataSource)
-    let variable = _.find(dataSource.templateSrv.variables, {'name':'groupName'});
-    let groupNames = variable?.current?.value;
-    let tags = variable?.tags.map(tag => tag.text);
-    console.log("Group Names", groupNames, "Tags", tags);
+    // let dataSource = getDataSourceSrv();
+    // let variable = _.find(dataSource.templateSrv.variables, {'name': 'groupName'});
+    // let groupNames = variable?.current?.value;
+    // let tags = variable?.tags.map(tag => tag.text);
 
     // Hover marker
     this.hoverMarker = L.circleMarker(L.latLng(0, 0), {
@@ -341,7 +365,8 @@ export class TrackMapCtrl extends MetricsPanelCtrl {
 
     this.systemMarkers = this.systems.map(system => {
       const latLng = L.latLng(system.latitude, system.longitude);
-      const marker = L.marker(latLng).addTo(this.leafMap);
+
+      const marker = L.marker(latLng, {icon: RED_ICON}).addTo(this.leafMap);
       marker.bindPopup(`<b>${system.name}</b>`);
       return marker;
     });
@@ -355,7 +380,7 @@ export class TrackMapCtrl extends MetricsPanelCtrl {
         this.leafMap.fitBounds(bounds);
       }
       else {
-        this.leafMap.setView([0, 0], 1);
+        this.leafMap.setView(LAT_LNG_CENTER_NEVADA, DEFAULT_ZOOM_LEVEL);
       }
     }
     this.render();
@@ -404,7 +429,7 @@ export class TrackMapCtrl extends MetricsPanelCtrl {
 
     if (data.length < 2) {
       // No data or incorrect data, show a world map and abort
-      this.leafMap.setView([0, 0], 1);
+      this.leafMap.setView(LAT_LNG_CENTER_NEVADA, DEFAULT_ZOOM_LEVEL);
       this.render();
       return;
     }
